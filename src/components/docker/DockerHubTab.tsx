@@ -7,6 +7,7 @@ import { Search, Download } from 'lucide-react';
 import { toast } from 'sonner';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
+import { useQuery } from '@tanstack/react-query';
 
 interface DockerHubImage {
   name: string;
@@ -16,11 +17,59 @@ interface DockerHubImage {
   pulls: string;
 }
 
+interface DockerHubResponse {
+  count: number;
+  next: string | null;
+  previous: string | null;
+  results: Array<{
+    repo_name: string;
+    short_description: string | null;
+    star_count: number;
+    is_official: boolean;
+    pull_count: number;
+  }>;
+}
+
+const formatPullCount = (count: number): string => {
+  if (count >= 1000000000) {
+    return `${(count / 1000000000).toFixed(1)}B+`;
+  } else if (count >= 1000000) {
+    return `${(count / 1000000).toFixed(1)}M+`;
+  } else if (count >= 1000) {
+    return `${(count / 1000).toFixed(1)}K+`;
+  }
+  return count.toString();
+};
+
 const DockerHubTab = () => {
   const [searchQuery, setSearchQuery] = useState('');
-  const [isSearching, setIsSearching] = useState(false);
+  const [searchSubmitted, setSearchSubmitted] = useState(false);
   const [isPulling, setPulling] = useState<{ [key: string]: boolean }>({});
-  const [searchResults, setSearchResults] = useState<DockerHubImage[]>([]);
+
+  const { data, isLoading, error, refetch } = useQuery({
+    queryKey: ['dockerHubImages', searchQuery],
+    queryFn: async () => {
+      if (!searchQuery) return { results: [], count: 0 };
+      
+      const response = await fetch(`https://hub.docker.com/v2/search/repositories/?query=${encodeURIComponent(searchQuery)}&page_size=10`);
+      
+      if (!response.ok) {
+        throw new Error('Failed to fetch data from Docker Hub');
+      }
+      
+      return await response.json() as DockerHubResponse;
+    },
+    enabled: searchSubmitted && !!searchQuery.trim(),
+    staleTime: 5 * 60 * 1000, // 5 minutes
+  });
+
+  const searchResults: DockerHubImage[] = data?.results?.map(result => ({
+    name: result.repo_name,
+    description: result.short_description || 'No description available',
+    stars: result.star_count,
+    official: result.is_official,
+    pulls: formatPullCount(result.pull_count)
+  })) || [];
 
   const handleSearch = async () => {
     if (!searchQuery.trim()) {
@@ -28,38 +77,8 @@ const DockerHubTab = () => {
       return;
     }
 
-    try {
-      setIsSearching(true);
-      
-      // In a real app, this would call the Docker Hub API
-      // const response = await fetch(`https://hub.docker.com/v2/search/repositories/?query=${searchQuery}&page_size=10`);
-      // const data = await response.json();
-      // const formattedResults = data.results.map(result => ({
-      //   name: result.repo_name,
-      //   description: result.short_description,
-      //   stars: result.star_count,
-      //   official: result.is_official,
-      //   pulls: result.pull_count
-      // }));
-      
-      // Simulate API call
-      await new Promise(resolve => setTimeout(resolve, 1000));
-      
-      const mockResults: DockerHubImage[] = [
-        { name: 'nginx', description: 'Official build of Nginx', stars: 15000, official: true, pulls: '1B+' },
-        { name: 'node', description: 'Node.js is a JavaScript runtime', stars: 12000, official: true, pulls: '1B+' },
-        { name: 'mysql', description: 'MySQL Server', stars: 11000, official: true, pulls: '1B+' },
-        { name: 'redis', description: 'Redis is an open source key-value store', stars: 9800, official: true, pulls: '1B+' },
-        { name: 'mongo', description: 'MongoDB document databases', stars: 8500, official: true, pulls: '500M+' }
-      ].filter(img => img.name.includes(searchQuery.toLowerCase()));
-      
-      setSearchResults(mockResults);
-    } catch (error) {
-      console.error('Error searching Docker Hub:', error);
-      toast.error('Failed to search Docker Hub');
-    } finally {
-      setIsSearching(false);
-    }
+    setSearchSubmitted(true);
+    await refetch();
   };
 
   const handlePullImage = async (imageName: string) => {
@@ -113,12 +132,18 @@ const DockerHubTab = () => {
           </div>
           <Button 
             onClick={handleSearch}
-            disabled={isSearching}
+            disabled={isLoading}
             className="bg-[#2496ED] hover:bg-[#1d7ac1]"
           >
-            {isSearching ? 'Searching...' : 'Search'}
+            {isLoading ? 'Searching...' : 'Search'}
           </Button>
         </div>
+        
+        {error && (
+          <div className="p-4 mb-4 text-red-700 bg-red-100 rounded-md">
+            Failed to fetch images from Docker Hub. Please try again later.
+          </div>
+        )}
         
         <div className="rounded-md border">
           <Table>
@@ -132,7 +157,13 @@ const DockerHubTab = () => {
               </TableRow>
             </TableHeader>
             <TableBody>
-              {searchResults.length > 0 ? (
+              {isLoading ? (
+                <TableRow>
+                  <TableCell colSpan={5} className="text-center py-6">
+                    Loading images...
+                  </TableCell>
+                </TableRow>
+              ) : searchResults.length > 0 ? (
                 searchResults.map((image) => (
                   <TableRow key={image.name}>
                     <TableCell>
@@ -164,7 +195,7 @@ const DockerHubTab = () => {
               ) : (
                 <TableRow>
                   <TableCell colSpan={5} className="text-center py-6 text-gray-500">
-                    {searchQuery ? 'No results found' : 'Search Docker Hub for images'}
+                    {searchSubmitted ? 'No results found' : 'Search Docker Hub for images'}
                   </TableCell>
                 </TableRow>
               )}
