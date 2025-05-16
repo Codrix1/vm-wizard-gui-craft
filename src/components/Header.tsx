@@ -1,7 +1,7 @@
 
 import React from 'react';
 import { Link } from 'react-router-dom';
-import { HardDrive, Cpu, Docker } from 'lucide-react';
+import { HardDrive, Cpu, Dock } from 'lucide-react';
 
 interface HeaderProps {
   title: string;
@@ -35,7 +35,7 @@ const Header: React.FC<HeaderProps> = ({ title }) => {
               </li>
               <li>
                 <Link to="/docker" className="hover:text-gray-200 transition-colors flex items-center gap-1">
-                  <Docker className="h-4 w-4" />
+                  <Dock className="h-4 w-4" />
                   Docker
                 </Link>
               </li>
