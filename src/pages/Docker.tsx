@@ -2,7 +2,7 @@
 import React, { useState } from 'react';
 import Layout from '../components/Layout';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { Whale } from 'lucide-react';
+import { Docker as DockerIcon } from 'lucide-react';
 import DockerfileTab from '../components/docker/DockerfileTab';
 import DockerImageTab from '../components/docker/DockerImageTab';
 import DockerImagesTab from '../components/docker/DockerImagesTab';
@@ -18,7 +18,7 @@ const Docker = () => {
         {/* Sidebar */}
         <div className="w-full md:w-64 bg-white shadow-md rounded-lg p-4 mb-4 md:mb-0 md:mr-4">
           <div className="flex items-center mb-6">
-            <Whale className="h-8 w-8 text-[#2496ED] mr-2" />
+            <DockerIcon className="h-8 w-8 text-[#2496ED] mr-2" />
             <h2 className="text-2xl font-bold">Docker</h2>
           </div>
           

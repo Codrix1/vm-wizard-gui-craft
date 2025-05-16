@@ -2,7 +2,7 @@
 import React from 'react';
 import { Link } from 'react-router-dom';
 import Layout from '../components/Layout';
-import { HardDrive, Cpu, Whale } from 'lucide-react';
+import { HardDrive, Cpu, Docker } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
 
@@ -51,7 +51,7 @@ const Index = () => {
           <Card className="transition-all hover:shadow-lg">
             <CardContent className="p-6 flex flex-col items-center text-center">
               <div className="bg-[#2496ED]/10 p-5 rounded-full mb-4">
-                <Whale className="h-12 w-12 text-[#2496ED]" />
+                <Docker className="h-12 w-12 text-[#2496ED]" />
               </div>
               <h2 className="text-2xl font-semibold mb-4">Docker Management</h2>
               <p className="text-gray-500 mb-6">
