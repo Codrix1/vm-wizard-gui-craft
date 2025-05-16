@@ -14,7 +14,12 @@ const Docker = () => {
 
   return (
     <Layout title="Docker Management">
-      <div className="flex flex-col md:flex-row h-full min-h-[calc(100vh-10rem)]">
+      <div className="mb-8">
+        <h1 className="text-3xl font-bold text-gray-800">Docker Management</h1>
+        <p className="text-gray-600 mt-2">Build, manage, and deploy Docker containers</p>
+      </div>
+      
+      <div className="flex flex-col md:flex-row h-full min-h-[calc(100vh-16rem)]">
         {/* Sidebar */}
         <div className="w-full md:w-64 bg-white shadow-md rounded-lg p-4 mb-4 md:mb-0 md:mr-4">
           <div className="flex items-center mb-6">
