@@ -8,6 +8,15 @@ import { toast } from 'sonner';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { useQuery } from '@tanstack/react-query';
+import { 
+  Pagination, 
+  PaginationContent, 
+  PaginationItem, 
+  PaginationLink, 
+  PaginationNext, 
+  PaginationPrevious 
+} from '@/components/ui/pagination';
+import { Skeleton } from '@/components/ui/skeleton';
 
 interface DockerHubImage {
   name: string;
@@ -18,19 +27,18 @@ interface DockerHubImage {
 }
 
 interface DockerHubResponse {
-  count: number;
-  next: string | null;
-  previous: string | null;
   results: Array<{
-    repo_name: string;
-    short_description: string | null;
+    name: string;
+    description: string;
     star_count: number;
     is_official: boolean;
-    pull_count: number;
+    pull_count: string;
   }>;
 }
 
-const formatPullCount = (count: number): string => {
+const formatPullCount = (count: string | number): string => {
+  if (typeof count === 'string') return count;
+  
   if (count >= 1000000000) {
     return `${(count / 1000000000).toFixed(1)}B+`;
   } else if (count >= 1000000) {
@@ -45,13 +53,20 @@ const DockerHubTab = () => {
   const [searchQuery, setSearchQuery] = useState('');
   const [searchSubmitted, setSearchSubmitted] = useState(false);
   const [isPulling, setPulling] = useState<{ [key: string]: boolean }>({});
+  const [currentPage, setCurrentPage] = useState(1);
+  const itemsPerPage = 10;
 
   const { data, isLoading, error, refetch } = useQuery({
-    queryKey: ['dockerHubImages', searchQuery],
+    queryKey: ['dockerHubImages', searchQuery, currentPage],
     queryFn: async () => {
-      if (!searchQuery) return { results: [], count: 0 };
+      if (!searchQuery) return { results: [] };
       
-      const response = await fetch(`https://hub.docker.com/v2/search/repositories/?query=${encodeURIComponent(searchQuery)}&page_size=10`);
+      const filters = JSON.stringify({
+        page: currentPage,
+        limit: itemsPerPage,
+      });
+      
+      const response = await fetch(`/api/docker/search?term=${encodeURIComponent(searchQuery)}&limit=${itemsPerPage}&filters=${encodeURIComponent(filters)}`);
       
       if (!response.ok) {
         throw new Error('Failed to fetch data from Docker Hub');
@@ -64,8 +79,8 @@ const DockerHubTab = () => {
   });
 
   const searchResults: DockerHubImage[] = data?.results?.map(result => ({
-    name: result.repo_name,
-    description: result.short_description || 'No description available',
+    name: result.name,
+    description: result.description || 'No description available',
     stars: result.star_count,
     official: result.is_official,
     pulls: formatPullCount(result.pull_count)
@@ -77,6 +92,7 @@ const DockerHubTab = () => {
       return;
     }
 
+    setCurrentPage(1);
     setSearchSubmitted(true);
     await refetch();
   };
@@ -85,15 +101,16 @@ const DockerHubTab = () => {
     try {
       setPulling(prev => ({ ...prev, [imageName]: true }));
       
-      // In a real app, this would call a local API to pull the image
-      // await fetch('http://localhost:3001/api/docker/pull', {
-      //   method: 'POST',
-      //   headers: { 'Content-Type': 'application/json' },
-      //   body: JSON.stringify({ imageName })
-      // });
+      // Call the backend API to pull the image
+      const response = await fetch('/api/docker/pull', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ imageName })
+      });
       
-      // Simulate API call
-      await new Promise(resolve => setTimeout(resolve, 2000));
+      if (!response.ok) {
+        throw new Error('Failed to pull image');
+      }
       
       toast.success(`Successfully pulled ${imageName}`);
     } catch (error) {
@@ -108,6 +125,11 @@ const DockerHubTab = () => {
     if (e.key === 'Enter') {
       handleSearch();
     }
+  };
+
+  const handlePageChange = (page: number) => {
+    setCurrentPage(page);
+    refetch();
   };
 
   return (
@@ -158,11 +180,15 @@ const DockerHubTab = () => {
             </TableHeader>
             <TableBody>
               {isLoading ? (
-                <TableRow>
-                  <TableCell colSpan={5} className="text-center py-6">
-                    Loading images...
-                  </TableCell>
-                </TableRow>
+                Array(5).fill(0).map((_, index) => (
+                  <TableRow key={`loading-${index}`}>
+                    <TableCell><Skeleton className="h-6 w-24" /></TableCell>
+                    <TableCell><Skeleton className="h-6 w-full" /></TableCell>
+                    <TableCell><Skeleton className="h-6 w-12" /></TableCell>
+                    <TableCell><Skeleton className="h-6 w-12" /></TableCell>
+                    <TableCell className="text-right"><Skeleton className="h-6 w-16 ml-auto" /></TableCell>
+                  </TableRow>
+                ))
               ) : searchResults.length > 0 ? (
                 searchResults.map((image) => (
                   <TableRow key={image.name}>
@@ -177,7 +203,7 @@ const DockerHubTab = () => {
                       </div>
                     </TableCell>
                     <TableCell className="max-w-[300px] truncate">{image.description}</TableCell>
-                    <TableCell>{image.stars.toLocaleString()}</TableCell>
+                    <TableCell>{typeof image.stars === 'number' ? image.stars.toLocaleString() : image.stars}</TableCell>
                     <TableCell>{image.pulls}</TableCell>
                     <TableCell className="text-right">
                       <Button
@@ -202,6 +228,30 @@ const DockerHubTab = () => {
             </TableBody>
           </Table>
         </div>
+        
+        {searchResults.length > 0 && (
+          <div className="mt-4">
+            <Pagination>
+              <PaginationContent>
+                <PaginationItem>
+                  <PaginationPrevious 
+                    onClick={() => currentPage > 1 && handlePageChange(currentPage - 1)}
+                    className={currentPage === 1 ? "pointer-events-none opacity-50" : "cursor-pointer"}
+                  />
+                </PaginationItem>
+                <PaginationItem>
+                  <PaginationLink isActive={true}>{currentPage}</PaginationLink>
+                </PaginationItem>
+                <PaginationItem>
+                  <PaginationNext 
+                    onClick={() => handlePageChange(currentPage + 1)}
+                    className="cursor-pointer"
+                  />
+                </PaginationItem>
+              </PaginationContent>
+            </Pagination>
+          </div>
+        )}
       </CardContent>
     </Card>
   );
