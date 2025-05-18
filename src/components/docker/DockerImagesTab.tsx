@@ -3,9 +3,10 @@ import React, { useState, useEffect } from 'react';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
-import { Search, RefreshCw, Trash2 } from 'lucide-react';
+import { Search, RefreshCw, Trash2, Docker } from 'lucide-react';
 import { toast } from 'sonner';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
+import RunContainerDialog from './RunContainerDialog';
 
 interface DockerImage {
   id: string;
@@ -17,9 +18,11 @@ interface DockerImage {
 
 const DockerImagesTab = () => {
   const [images, setImages] = useState<DockerImage[]>([]);
-  
   const [searchTerm, setSearchTerm] = useState('');
   const [isLoading, setIsLoading] = useState(false);
+  const [selectedImage, setSelectedImage] = useState<DockerImage | null>(null);
+  const [isRunDialogOpen, setIsRunDialogOpen] = useState(false);
+  
   const fetchImages = async () => {
     try {
       setIsLoading(true);
@@ -48,8 +51,12 @@ const DockerImagesTab = () => {
     }
   };
   
+  const handleRunContainer = (image: DockerImage) => {
+    setSelectedImage(image);
+    setIsRunDialogOpen(true);
+  };
+  
   useEffect(() => {
-    
     fetchImages();
   }, []);
 
@@ -96,7 +103,7 @@ const DockerImagesTab = () => {
                 <TableHead>Tag</TableHead>
                 <TableHead>Created</TableHead>
                 <TableHead>Size</TableHead>
-                <TableHead className="w-[80px]">Actions</TableHead>
+                <TableHead className="w-[140px]">Actions</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
@@ -108,13 +115,25 @@ const DockerImagesTab = () => {
                     <TableCell>{image.created}</TableCell>
                     <TableCell>{image.size}</TableCell>
                     <TableCell>
-                      <Button
-                        variant="ghost"
-                        size="icon"
-                        onClick={() => handleDeleteImage(image.id)}
-                      >
-                        <Trash2 className="h-4 w-4 text-red-500" />
-                      </Button>
+                      <div className="flex space-x-2">
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          onClick={() => handleRunContainer(image)}
+                          className="h-8 px-2"
+                        >
+                          <Docker className="h-4 w-4 mr-1" />
+                          Run
+                        </Button>
+                        <Button
+                          variant="ghost"
+                          size="icon"
+                          onClick={() => handleDeleteImage(image.id)}
+                          className="h-8 w-8"
+                        >
+                          <Trash2 className="h-4 w-4 text-red-500" />
+                        </Button>
+                      </div>
                     </TableCell>
                   </TableRow>
                 ))
@@ -128,6 +147,15 @@ const DockerImagesTab = () => {
             </TableBody>
           </Table>
         </div>
+
+        {selectedImage && (
+          <RunContainerDialog
+            open={isRunDialogOpen}
+            onOpenChange={setIsRunDialogOpen}
+            imageId={selectedImage.id}
+            imageName={`${selectedImage.repository}:${selectedImage.tag}`}
+          />
+        )}
       </CardContent>
     </Card>
   );
