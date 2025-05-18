@@ -8,10 +8,10 @@ import { Card, CardContent } from '@/components/ui/card';
 
 const Index = () => {
   return (
-    <Layout title="Virtual Machine Manager">
+    <Layout title="Docker Desktop">
       <div className="flex flex-col items-center justify-center mt-16">
         <h1 className="text-4xl font-bold mb-8 text-gray-800 text-center">
-          Welcome to Virtual Machine Manager
+          Welcome to Docker Desktop
         </h1>
         <p className="text-xl text-gray-600 max-w-2xl text-center mb-12">
           Create and manage virtual disks, machines, and Docker containers with an intuitive interface
