@@ -61,13 +61,8 @@ const DockerHubTab = () => {
     queryFn: async () => {
       if (!searchQuery) return { results: [] };
       
-      const filters = JSON.stringify({
-        page: currentPage,
-        limit: itemsPerPage,
-      });
-      
-      const response = await fetch(`/api/docker/search?term=${encodeURIComponent(searchQuery)}&limit=${itemsPerPage}&filters=${encodeURIComponent(filters)}`);
-      
+      const response = await fetch(`http://localhost:5000/api/docker/search?term=${encodeURIComponent(searchQuery)}&limit=${itemsPerPage}&page=${currentPage}`);
+
       if (!response.ok) {
         throw new Error('Failed to fetch data from Docker Hub');
       }
@@ -102,7 +97,7 @@ const DockerHubTab = () => {
       setPulling(prev => ({ ...prev, [imageName]: true }));
       
       // Call the backend API to pull the image
-      const response = await fetch('/api/docker/pull', {
+      const response = await fetch('http://localhost:5000/api/docker/pull', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ imageName })

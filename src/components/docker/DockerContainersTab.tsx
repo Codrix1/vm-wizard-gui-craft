@@ -20,14 +20,7 @@ interface DockerContainer {
 }
 
 const DockerContainersTab = () => {
-  const [containers, setContainers] = useState<DockerContainer[]>([
-    { id: 'abc123', name: 'happy_newton', image: 'nginx:latest', status: 'running', created: '3 hours ago', ports: '80:80' },
-    { id: 'def456', name: 'nervous_feynman', image: 'node:18', status: 'exited', created: '2 days ago', ports: '3000:3000' },
-    { id: 'ghi789', name: 'eager_einstein', image: 'redis:alpine', status: 'running', created: '5 hours ago', ports: '6379:6379' },
-    { id: 'jkl101', name: 'focused_turing', image: 'postgres:13', status: 'running', created: '1 day ago', ports: '5432:5432' },
-    { id: 'mno112', name: 'hopeful_hopper', image: 'python:3.9', status: 'stopped', created: '3 days ago', ports: '8000:8000' },
-  ]);
-  
+  const [containers, setContainers] = useState<DockerContainer[]>([]);
   const [searchTerm, setSearchTerm] = useState('');
   const [showOnlyRunning, setShowOnlyRunning] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
@@ -35,13 +28,10 @@ const DockerContainersTab = () => {
   const fetchContainers = async () => {
     try {
       setIsLoading(true);
-      // In a real app, this would call a local API to get Docker containers
-      // const response = await fetch('http://localhost:3001/api/docker/containers');
-      // const data = await response.json();
-      // setContainers(data);
-      
-      // Simulate API call
-      await new Promise(resolve => setTimeout(resolve, 800));
+      const response = await fetch('http://localhost:5000/api/docker/containers');
+      if (!response.ok) throw new Error('Failed to fetch containers');
+      const data = await response.json();
+      setContainers(data);
       toast.success('Container list refreshed');
     } catch (error) {
       console.error('Error fetching Docker containers:', error);
@@ -53,49 +43,42 @@ const DockerContainersTab = () => {
   
   const handleStartContainer = async (id: string) => {
     try {
-      // In a real app, this would call a local API to start the container
-      // await fetch(`http://localhost:3001/api/docker/containers/${id}/start`, {
-      //   method: 'POST'
-      // });
-      
-      setContainers(containers.map(container => 
-        container.id === id ? { ...container, status: 'running' } : container
-      ));
-      
+      const response = await fetch(`http://localhost:5000/api/docker/containers/${id}/start`, {
+        method: 'POST',
+      });
+      if (!response.ok) throw new Error('Failed to start container');
+  
+      await fetchContainers();
       toast.success('Container started');
     } catch (error) {
       console.error('Error starting container:', error);
       toast.error('Failed to start container');
     }
   };
-  
+
   const handleStopContainer = async (id: string) => {
     try {
-      // In a real app, this would call a local API to stop the container
-      // await fetch(`http://localhost:3001/api/docker/containers/${id}/stop`, {
-      //   method: 'POST'
-      // });
-      
-      setContainers(containers.map(container => 
-        container.id === id ? { ...container, status: 'stopped' } : container
-      ));
-      
+      const response = await fetch(`http://localhost:5000/api/docker/containers/${id}/stop`, {
+        method: 'POST',
+      });
+      if (!response.ok) throw new Error('Failed to stop container');
+  
+      await fetchContainers();
       toast.success('Container stopped');
     } catch (error) {
       console.error('Error stopping container:', error);
       toast.error('Failed to stop container');
     }
   };
-  
+
   const handleDeleteContainer = async (id: string) => {
     try {
-      // In a real app, this would call a local API to delete the container
-      // await fetch(`http://localhost:3001/api/docker/containers/${id}`, {
-      //   method: 'DELETE'
-      // });
-      
-      setContainers(containers.filter(container => container.id !== id));
-      
+      const response = await fetch(`http://localhost:5000/api/docker/containers/${id}`, {
+        method: 'DELETE',
+      });
+      if (!response.ok) throw new Error('Failed to delete container');
+  
+      await fetchContainers();
       toast.success('Container removed');
     } catch (error) {
       console.error('Error removing container:', error);
@@ -104,9 +87,9 @@ const DockerContainersTab = () => {
   };
 
   useEffect(() => {
-    // Initial fetch of Docker containers
-    // fetchContainers();
+    fetchContainers();
   }, []);
+  
 
   const filteredContainers = containers
     .filter(container => 

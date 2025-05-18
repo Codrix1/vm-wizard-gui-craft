@@ -16,27 +16,16 @@ interface DockerImage {
 }
 
 const DockerImagesTab = () => {
-  const [images, setImages] = useState<DockerImage[]>([
-    { id: '123abc', repository: 'nginx', tag: 'latest', created: '2 days ago', size: '135MB' },
-    { id: '456def', repository: 'node', tag: '18-alpine', created: '1 week ago', size: '167MB' },
-    { id: '789ghi', repository: 'python', tag: '3.9', created: '3 days ago', size: '885MB' },
-    { id: '101jkl', repository: 'ubuntu', tag: '20.04', created: '2 weeks ago', size: '72MB' },
-    { id: '112mno', repository: 'redis', tag: 'alpine', created: '5 days ago', size: '32MB' },
-  ]);
+  const [images, setImages] = useState<DockerImage[]>([]);
   
   const [searchTerm, setSearchTerm] = useState('');
   const [isLoading, setIsLoading] = useState(false);
-
   const fetchImages = async () => {
     try {
       setIsLoading(true);
-      // In a real app, this would call a local API to get Docker images
-      // const response = await fetch('http://localhost:3001/api/docker/images');
-      // const data = await response.json();
-      // setImages(data);
-      
-      // Simulate API call
-      await new Promise(resolve => setTimeout(resolve, 800));
+      const response = await fetch('http://localhost:5000/api/docker/images');
+      const data = await response.json();
+      setImages(data);
       toast.success('Docker images refreshed');
     } catch (error) {
       console.error('Error fetching Docker images:', error);
@@ -48,22 +37,20 @@ const DockerImagesTab = () => {
   
   const handleDeleteImage = async (id: string) => {
     try {
-      // In a real app, this would call a local API to delete the image
-      // await fetch(`http://localhost:3001/api/docker/images/${id}`, {
-      //   method: 'DELETE'
-      // });
-      
-      setImages(images.filter(image => image.id !== id));
+      await fetch(`http://localhost:5000/api/docker/images/${id}`, {
+        method: 'DELETE'
+      });
+      setImages(prev => prev.filter(image => image.id !== id));
       toast.success('Image deleted successfully');
     } catch (error) {
       console.error('Error deleting image:', error);
       toast.error('Failed to delete image');
     }
   };
-
+  
   useEffect(() => {
-    // Initial fetch of Docker images
-    // fetchImages();
+    
+    fetchImages();
   }, []);
 
   const filteredImages = images.filter(image => 
